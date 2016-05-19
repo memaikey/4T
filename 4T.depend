@@ -1,0 +1,21 @@
+# depslib dependency file v1.0
+1463656165 source:c:\users\niels donkers\dropbox\!maikel\code\4t\hhs_examples\tictacslow.cpp
+	<iostream>
+	<algorithm>
+	<string>
+	"Matrix.h"
+	<windows.h>
+	<ctime>
+
+1463656157 c:\users\niels donkers\dropbox\!maikel\code\4t\hhs_examples\matrix.h
+	<stdexcept>
+	<initializer_list>
+	<array>
+	<algorithm>
+
+1463671372 source:c:\users\niels donkers\dropbox\!maikel\code\4t\main.cpp
+	<iostream>
+	<algorithm>
+	<string>
+	"HHS_examples/Matrix.h"
+
