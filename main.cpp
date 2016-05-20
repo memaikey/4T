@@ -13,46 +13,88 @@ class SmallBoard
 {
 public:
     SmallBoard();
-    enum Side {EMPTY, HUMAN, COMPUTER};
-    Side side(const int row, const int col) const;
+    void PrintSmall(const int row, const int col) const;
 private:
+    enum Side {EMPTY, HUMAN, COMPUTER};
     matrix<Side, 3, 3> board;
+    Side side;
+    const char humanSymbol = 'o';
+    const char computerSymbol = 'x';
+    const char emptySymbol = ' ';
+    void PrintNormal(const int row, const int col) const;
+    void PrintWon() const;
 };
 
 class Console
 {
 public:
-    void Play();
-    void PrintSmall(const int bigRow,const int bigCol) const;
+    void PrintBoard() const;
 private:
-    SmallBoard smallboard;
-    char humanSymbol = 'o';
-    char computerSymbol = 'x';
+    matrix<SmallBoard, 3, 3> bigBoard;
 };
 
 SmallBoard::SmallBoard()
 {
     fill(board.begin(), board.end(), EMPTY);
+    side = EMPTY;
 }
 
-SmallBoard::Side SmallBoard::side(const int row, const int col) const
+void SmallBoard::PrintSmall(const int row, const int col) const
 {
-    return board(row,col);
+    if (side == EMPTY){
+        PrintNormal(row, col);
+    }
+    else{
+        #error continue here
+        PrintWon(row, col, );
+    }
 }
 
-void Console::PrintSmall(const int bigRow,const int bigCol) const
+void SmallBoard::PrintNormal(const int row, const int col) const
 {
-for (int r = 0; r < 3; ++r){
-        for (int c = 0; c < 3; ++c){
-            cout << smallboard.side(r,c);
+    if (board(row,col) == HUMAN){
+        cout << humanSymbol;
+    }
+    else if (board(row,col) == COMPUTER){
+        cout << computerSymbol;
+    }
+    else{
+        cout << emptySymbol;
+    }
+}
+
+void SmallBoard::PrintWon() const
+{
+
+}
+
+void Console::PrintBoard() const
+//TODO:
+#warning TODO: check for smallBoard side
+{
+    cout << " |012|345|678\n"
+         << "-+---+---+---\n";
+    for (int row = 0; row < 9; ++row){
+        if ((row == 3) || (row==6)){
+            cout << "-+---+---+---\n";
         }
-        cout << "\n";
+        for (int col = 0; col < 9; ++ col){
+            if (col == 0){
+                cout << row << '|';
+            }
+            if ((col == 3) || (col==6)){
+                cout << '|';
+            }
+            bigBoard(row/3,col/3).PrintSmall(row%3,col%3);
+        }
+        cout << endl;
     }
 }
 
 int main(){
-    cout << "Hello!\n";
+    cout << "Hello!\n\n";
     Console console;
-    console.PrintSmall(0,0);
+    console.PrintBoard();
+    cout << "\nBye!\n";
     return 0;
 }
