@@ -42,35 +42,23 @@ SmallBoard::SmallBoard()
 void SmallBoard::PrintSmall(const int row, const int col) const
 {
     if (side == EMPTY){
-        PrintNormal(row, col);
+        if (board(row,col) == HUMAN){
+            cout << humanSymbol;
+        }
+        else if (board(row,col) == COMPUTER){
+            cout << computerSymbol;
+        }
+        else{
+            cout << emptySymbol;
+        }
     }
     else{
-        #error continue here
-        PrintWon(row, col, );
+        if (side == HUMAN){cout << humanSymbol;}
+        else if (side == COMPUTER){cout << computerSymbol;}
     }
-}
-
-void SmallBoard::PrintNormal(const int row, const int col) const
-{
-    if (board(row,col) == HUMAN){
-        cout << humanSymbol;
-    }
-    else if (board(row,col) == COMPUTER){
-        cout << computerSymbol;
-    }
-    else{
-        cout << emptySymbol;
-    }
-}
-
-void SmallBoard::PrintWon() const
-{
-
 }
 
 void Console::PrintBoard() const
-//TODO:
-#warning TODO: check for smallBoard side
 {
     cout << " |012|345|678\n"
          << "-+---+---+---\n";
