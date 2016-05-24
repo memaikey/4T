@@ -1,6 +1,5 @@
 //matrix test
 //use PROCENTEC style guide
-#define debug TRUE
 
 #include <iostream>
 #include <algorithm>
@@ -10,7 +9,10 @@ using namespace std;
 
 #include <cassert>
 //#define NDEBUG
-enum Side {EMPTY, HUMAN, COMPUTER};
+enum Side {EMPTY, HUMAN, COMPUTER, DRAW};
+
+#warning add debug IFDEFs
+#warning add documentation
 
 class SmallBoard
 {
@@ -18,36 +20,44 @@ public:
     SmallBoard();
     void PrintSmall(const int row, const int col) const;
     Side FieldStatus() const;
+    Side SpotStatus(const int row, const int col) const;
+    Side DoMove(const int row, const int col, const Side side);
+    void IsFieldDraw();
 private:
     matrix<Side, 3, 3> board;
-    Side side;
-    const char humanSymbol = 'o';
-    const char computerSymbol = 'x';
+    Side fieldWonBy;
+    const char humanSymbol = 'x';
+    const char computerSymbol = 'o';
     const char emptySymbol = ' ';
-    //void PrintWon() const;
 };
 
 class Game
 {
 public:
-    Game();
+    Game(const bool playerFirst);
     void PrintBoard() const;
-    void Move();
+    bool Move();
+    void Getmove(const string s, const int field);
     Side BoardStatus() const;
+    bool CheckGameEnd(const Side side) const;
 private:
+    bool playerFirst;
     matrix<SmallBoard, 3, 3> bigBoard;
     int nextMove;
+    bool playerTurn;
+    int row;
+    int col;
 };
 
 SmallBoard::SmallBoard()
 {
     fill(board.begin(), board.end(), EMPTY);
-    side = EMPTY;
+    fieldWonBy = EMPTY;
 }
 
 void SmallBoard::PrintSmall(const int row, const int col) const
 {
-    if (side == EMPTY) {
+    if ((fieldWonBy == EMPTY) || (fieldWonBy == DRAW)) {
         if (board(row,col) == HUMAN) {
             cout << humanSymbol;
         }
@@ -59,24 +69,55 @@ void SmallBoard::PrintSmall(const int row, const int col) const
         }
     }
     else{
-        if (side == HUMAN) cout << humanSymbol;
-        else if (side == COMPUTER) cout << computerSymbol;
+        if (fieldWonBy == HUMAN) cout << humanSymbol;
+        else if (fieldWonBy == COMPUTER) cout << computerSymbol;
     }
 }
 
 Side SmallBoard::FieldStatus() const
 {
-    return side;
+    return fieldWonBy;
 }
 
-Game::Game()
+Side SmallBoard::SpotStatus(const int row, const int col) const
+{
+    return board(row, col);
+}
+
+Side SmallBoard::DoMove(const int row, const int col, const Side side)
+{
+    board(row, col) = side;
+    for (int i = 0; i < 3; ++i) {
+        if ((board(i, 0) == side && board(i, 1) == side && board(i, 2) == side) ||
+            (board(0, i) == side && board(1, i) == side && board(2, i) == side)) {
+            fieldWonBy = side;
+            return fieldWonBy;
+        }
+    }
+    if ((board(0, 0) == side && board(1, 1) == side && board(2, 2) == side) ||
+        (board(0, 2) == side && board(1, 1) == side && board(2, 0) == side)){
+       fieldWonBy = side;
+       return fieldWonBy;
+       }
+    if (none_of(board.cbegin(), board.cend(), [](Side s){return s == EMPTY;})) {
+        fieldWonBy = DRAW;
+        return fieldWonBy;
+    }
+    return fieldWonBy;
+}
+
+Game::Game(const bool playerFirst)
 {
     nextMove = 0;
+    playerTurn = playerFirst;
+    row = 0;
+    col = 0;
 }
 
 void Game::PrintBoard() const
 {
-    cout << " |012|345|678\n"
+    cout << endl
+         << " |012|345|678\n"
          << "-A---B---C---\n";
     for (int row = 0; row < 9; ++row) {
         if (row == 3){
@@ -116,27 +157,114 @@ Side Game::BoardStatus() const
     }
 }
 
-void Game::Move()
+bool Game::Move()
 {
-    assert ((nextMove >= 0) && (nextMove < 10));
-    if ((nextMove == 0)) {
-        cout << "Play in any field! Enter the row and column:\n";
-    }
-    else if ((BoardStatus() == HUMAN) ||
-             (BoardStatus() == COMPUTER)) {
-        cout << "Play in any field! Enter the row and column:\n";
+    string s;
+    Side side;
+    if (playerTurn) {
+        side = HUMAN;
+        s = "Player, ";
     }
     else {
-        char fieldName = 'A'+nextMove-1;
-        cout << "Play in field " << fieldName << ". Enter the row and column:\n";
+        side = COMPUTER;
+        s = "Computer, ";
     }
+    if (nextMove == 0) {
+        s += "play in any field! Enter the row and column:\n";
+    }
+    else {
+        char fieldName = 'A' - 1 + nextMove;
+        s += "play in field ";
+        s += fieldName;
+        s += ". Enter the row and column:\n";
+    }
+    Getmove(s, nextMove);
+
+    bigBoard(row/3, col/3).DoMove(row%3, col%3, side);
+    playerTurn = !playerTurn;
+
+    //Restrict move
+    nextMove = (row%3*3 + col%3 + 1);
+    //Move invalid, free move
+    if (BoardStatus() != EMPTY) {
+        nextMove = 0;
+    }
+    return 1;
+}
+
+void Game::Getmove(const string s, const int field)
+{
+    int tempRow, tempCol;
+    bool inputCorrect = false;
+    do {
+        PrintBoard();
+        cout << s;
+        cin >> tempRow >> tempCol;
+        //Move out of bounds
+        if ((tempCol > 8) || (tempCol < 0) || (tempRow > 8) || (tempRow < 0)) {
+            cout << "\nMove out of bounds, choose a value from 0 to 8 for row and column.\n\n";
+        }
+        //Forced move, wrong field
+        else if ((field != 0) && ((tempRow/3*3 + tempCol/3 + 1) != field)) {
+            char playField = 'A' - 1 + field;
+            cout << "\nWrong field, play in field " << playField << ".\n\n";
+        }
+        //Field already won
+        else if (bigBoard(tempRow/3, tempCol/3).FieldStatus() != EMPTY) {
+            cout << "\nField already won, choose a different field.\n\n";
+        }
+        //Spot taken
+        else if (bigBoard(tempRow/3, tempCol/3).SpotStatus(tempRow%3, tempCol%3) != EMPTY) {
+            cout << "\nSpot already taken, choose a different spot.\n\n";
+        }
+        else {
+            inputCorrect = true;
+        }
+    } while (!inputCorrect);
+    //Save valid move
+    row = tempRow;
+    col = tempCol;
+}
+
+bool Game::CheckGameEnd(const Side side) const
+{
+    Side winner = EMPTY;
+    if ((bigBoard(0, 0).FieldStatus() == side && bigBoard(1, 1).FieldStatus() == side && bigBoard(2, 2).FieldStatus() == side) ||
+        (bigBoard(0, 2).FieldStatus() == side && bigBoard(1, 1).FieldStatus() == side && bigBoard(2, 0).FieldStatus() == side)){
+        winner = side;
+    }
+    else {
+        for (int i = 0; i < 3; ++i) {
+            if ((bigBoard(i, 0).FieldStatus() == side && bigBoard(i, 1).FieldStatus() == side && bigBoard(i, 2).FieldStatus() == side) ||
+                (bigBoard(0, i).FieldStatus() == side && bigBoard(1, i).FieldStatus() == side && bigBoard(2, i).FieldStatus() == side)) {
+                winner = side;
+            }
+        }
+    }
+    if (winner == side) {
+        if (side == HUMAN) {
+            cout << "Player won! Game over.\n";
+        }
+        else {
+            cout << "Computer won! Game over.\n";
+        }
+        return 1;
+    }
+    if (none_of(bigBoard.cbegin(), bigBoard.cend(), [](SmallBoard s){return s.FieldStatus() == EMPTY;})) {
+        cout << "Draw! Game over.\n";
+        return 1;
+    }
+    return 0;
 }
 
 int main(){
-    cout << "Hello!\n\n";
-    Game game;
-    game.PrintBoard();
-    game.Move();
+    cout << "Hello!\n";
+    bool playerFirst = true;
+    bool playing = true;
+    Game game(playerFirst);
+    do {
+        playing = game.Move();
+    } while (playing);
     cout << "\nBye!\n";
     return 0;
 }
